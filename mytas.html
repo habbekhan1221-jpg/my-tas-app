@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MH21 - Dehla Pakad (Version 25I)</title>
+    
+    <!-- Firebase SDK for Realtime Online Server -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle, #0e4d13 0%, #031e05 100%);
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px;
+        }
+
+        #profile-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 30000;
+        }
+        .profile-modal-content {
+            background: linear-gradient(135deg, #1b5e20, #002200);
+            border: 3px solid #ffd700;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        }
+        .profile-title { font-size: 20px; font-weight: bold; color: #ffd700; margin-bottom: 15px; text-transform: uppercase; }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 12px; color: #ffeb3b; margin-bottom: 5px; font-weight: bold; }
+        .input-group input[type="text"] {
+            width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ffd700;
+            background: rgba(0,0,0,0.6); color: #fff; font-size: 14px; font-weight: bold; outline: none;
+        }
+        .upload-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; gap: 10px; }
+        .photo-preview-box {
+            width: 95px; height: 95px; border-radius: 50%; border: 3px solid #ffd700;
+            background: #111; display: flex; justify-content: center; align-items: center; overflow: hidden;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+        }
+        .photo-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        .btn-upload-photo {
+            background: #00bcd4; color: white; padding: 8px 16px; border-radius: 8px;
+            font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #ffd700;
+            display: inline-block; box-shadow: 0 3px 0 #00838f;
+        }
+        .btn-upload-photo:active { transform: translateY(2px); box-shadow: none; }
+        .btn-save-profile {
+            background: #ff9800; color: white; border: none; padding: 10px 24px; font-size: 14px;
+            font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 0 #b76e00; width: 100%;
+        }
+        .btn-save-profile:active { transform: translateY(2px); box-shadow: none; }
+
+        .top-bar {
+            width: 100%; max-width: 980px; display: flex; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.9); padding: 5px 10px; border-radius: 8px; font-size: 10px;
+            border: 2px solid #ffd700; z-index: 10; gap: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            flex-wrap: wrap; text-align: center;
+        }
+        .kot-scoreboard {
+            display: flex; gap: 10px; font-size: 11px; font-weight: bold; flex-wrap: wrap; justify-content: center;
+        }
+        .kot-team { color: #ffeb3b; }
+        .kot-count { color: #ff5722; font-size: 12px; font-weight: 900; }
+
+        .btn-action {
+            background: #ff9800; color: white; border: none; padding: 2px 2px; border-radius: 5px;
+            font-weight: bold; cursor: pointer; font-size: 9px; box-shadow: 0 2px 0 #b76e00; text-align: center; width: 100%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-action:active { transform: translateY(2px); box-shadow: none; }
+        .btn-room { background: #009688; box-shadow: 0 2px 0 #00695c; }
+        .btn-join { background: #00bcd4; box-shadow: 0 2px 0 #00838f; }
+        .btn-matchmaking { background: #e91e63 !important; box-shadow: 0 2px 0 #980036 !important; }
+        .btn-whatsapp { background: #25D366 !important; box-shadow: 0 2px 0 #128C7E !important; }
+        
+        select { padding: 2px 2px; border-radius: 4px; font-size: 9px; font-weight: bold; background: #fff; color: #000; cursor: pointer; width: 100%; text-align: center; height: 100%; }
+
+        .timer-badge {
+            position: absolute; top: -55px; background: #ff5722; color: #fff; padding: 2px 6px;
+            border-radius: 10px; font-size: 10px; font-weight: bold; border: 1px solid #ffd700;
+            display: none; box-shadow: 0 2px 6px rgba(0,0,0,0.8); animation: pulseTimer 1s infinite;
+            z-index: 50;
+        }
+        @keyframes pulseTimer {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); background: #d32f2f; }
+            100% { transform: scale(1); }
+        }
+
+        #game-notification {
+            position: absolute; top: 45px; background: rgba(0, 0, 0, 0.9); border: 2px solid #ffd700;
+            color: #ffeb3b; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: bold;
+            z-index: 1000; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.8); text-align: center;
+        }
+        #game-notification .close-btn {
+            margin-left: 8px; background: #ff5722; color: white; border: none; border-radius: 50%;
+            width: 16px; height: 16px; font-size: 9px; cursor: pointer; font-weight: bold;
+        }
+
+        #match-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8);
+            display: none; justify-content: center; align-items: center; z-index: 20000;
+        }
+        .match-modal-content {
+            background: linear-gradient(135deg, #1b5e20, #003300); border: 3px solid #ffd700;
+            border-radius: 12px; padding: 20px 30px; text-align: center; max-width: 420px; box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        }
+        .match-modal-title { font-size: 18px; font-weight: bold; color: #ffd700; margin-bottom: 10px; }
+        .match-modal-body { font-size: 13px; color: #ffffff; margin-bottom: 16px; line-height: 1.5; }
+        .btn-modal-ok {
+            background: #ff9800; color: white; border: none; padding: 8px 22px; font-size: 13px;
+            font-weight: bold; border-radius: 6px; cursor: pointer; box-shadow: 0 3px 0 #b76e00;
+        }
+        .btn-modal-ok:active { transform: translateY(2px); box-shadow: none; }
+
+        .game-board {
+            position: relative; width: 100%; max-width: 650px; height: 85vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .player-box {
+            position: absolute; display: flex; flex-direction: column; align-items: center;
+            z-index: 5; transition: opacity 0.3s;
+        }
+        .player-box.folded { opacity: 0.45; filter: grayscale(80%); pointer-events: none; }
+        
+        .player-info {
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            background: transparent; padding: 2px; gap: 2px; min-width: 120px;
+        }
+        
+        .avatar {
+            width: 85px; height: 85px; border-radius: 50%; border: 3px solid #ffd700; background: #111;
+            display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 22px;
+            overflow: hidden; box-shadow: 0 0 12px rgba(255, 215, 0, 0.7);
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .p-details { font-size: 9px; text-align: center; display: flex; flex-direction: column; gap: 2px; width: 100%; }
+        .p-name { font-weight: bold; color: #ffd700; font-size: 11px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        
+        .stats-single-line {
+            display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 9px;
+            font-weight: bold; background: rgba(0, 0, 0, 0.75); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,215,0,0.4); width: 100%;
+        }
+        .score-board { color: #00e676; }
+        .dehla-symbols { color: #ffeb3b; }
+
+        .p-top { top: -42px; }        
+        .p-bottom { bottom: -70px; } /* पत्तों को थोड़ा और ऊपर खींचा गया */
+        .p-left { left: -165px; top: 20%; }  
+        .p-right { right: -165px; top: 20%; } 
+
+        #box-p3 { display: flex; flex-direction: column; align-items: center; }
+        .p3-wrapper { display: flex; align-items: center; gap: 18px; position: relative; }
+        
+        /* लेफ्ट साइड 2×2 ग्रिड */
+        .side-buttons-left {
+            position: absolute; left: -315px; top: 50%; transform: translateY(-50%);
+            display: grid; grid-template-columns: repeat(2, 150px); grid-template-rows: repeat(2, 27px);
+            gap: 5px; z-index: 25; width: 305px;
+        }
+
+        /* राइट साइड 3×2 ग्रिड */
+        .side-buttons-right {
+            position: absolute; right: -335px; top: 50%; transform: translateY(-50%);
+            display: grid; grid-template-columns: repeat(3, 105px); grid-template-rows: repeat(2, 24px);
+            gap: 5px; z-index: 25; width: 325px;
+        }
+
+        .cut-color-box {
+            background: linear-gradient(135deg, #b71c1c, #d32f2f);
+            border: 2px solid #ffd700; color: #ffeb3b; border-radius: 4px;
+            font-size: 8px; font-weight: bold; text-align: center; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            padding: 1px;
+        }
+
+        .hand { display: flex; margin-top: 4px; position: relative; justify-content: center; align-items: flex-end; }
+        #p1-hand { min-height: 180px; width: 400px; margin-top: 4px; }
+        #p1-hand .card { width: 130px; height: 195px; font-size: 24px; border: 2px solid #222 !important; }
+
+        #p2-hand, #p3-hand, #p4-hand { min-height: 85px; margin-top: 5px; }
+        #p3-hand { width: 260px; }
+        #p2-hand, #p4-hand { width: 230px; }
+
+        .card {
+            background: #ffffff !important; border-radius: 8px; border: 2px solid #222 !important;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 4px;
+            font-family: 'Georgia', serif; font-weight: bold; cursor: grab; box-shadow: 3px 6px 14px rgba(0,0,0,0.6);
+            transition: transform 0.2s; position: absolute; transform-origin: bottom center;
+        }
+        .card:active { cursor: grabbing; }
+        
+        #p2-hand .card, #p3-hand .card, #p4-hand .card {
+            width: 70px; height: 98px; background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%) !important;
+            border: 2px solid #ffd700 !important;
+        }
+
+        .card.red { color: #d32f2f !important; }
+        .card.black { color: #111 !important; }
+        .card.selected { transform: translateY(-35px) scale(1.1) !important; border: 3px solid #ffeb3b !important; z-index: 20; box-shadow: 0 10px 22px rgba(0,0,0,0.8); }
+
+        .card-back-design { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #ffd700; font-size: 26px; }
+        .card-corner { display: flex; flex-direction: column; align-items: center; line-height: 0.95; z-index: 2; }
+        .card-corner-top { align-self: flex-start; }
+        .card-corner-bottom { align-self: flex-end; transform: rotate(180deg); }
+
+        .card-pip-container {
+            position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
+            width: 62%; height: 72%; display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+        }
+        .ten-card-container {
+            position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
+            width: 66%; height: 75%; display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+        }
+        .pip-col { display: flex; flex-direction: column; justify-content: space-between; height: 100%; align-items: center; width: 48%; }
+        .pip-col-mid { display: flex; flex-direction: column; justify-content: space-around; height: 100%; align-items: center; }
+
+        .full-card-image {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 6px;
+            overflow: hidden; background: #fff; z-index: 15; display: flex; justify-content: center; align-items: center;
+        }
+        .full-card-image img { width: 100%; height: 100%; object-fit: fill; }
+
+        .center-table {
+            position: relative; width: 220px; height: 220px; background: rgba(0, 0, 0, 0.4);
+            border: 2px dashed rgba(255,255,255,0.3); border-radius: 50%; display: flex; justify-content: center; align-items: center;
+        }
+
+        .deck-container { position: absolute; width: 90px; height: 130px; cursor: pointer; z-index: 2; }
+        .deck-card-back {
+            position: absolute; width: 90px; height: 130px; background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+            border: 3px solid #ffd700; border-radius: 8px; box-shadow: 0 6px 15px rgba(0,0,0,0.7);
+            display: flex; justify-content: center; align-items: center; color: #ffd700; font-size: 32px; transition: all 0.2s ease-in-out;
+        }
+
+        @keyframes shuffleSpreadLeft { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(-30px, 10px) rotate(-18deg); } 100% { transform: translate(0, 0) rotate(0); } }
+        @keyframes shuffleSpreadRight { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(30px, -10px) rotate(18deg); } 100% { transform: translate(0, 0) rotate(0); } }
+        @keyframes shuffleSpreadUp { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(0, -25px) rotate(-8deg); } 100% { transform: translate(0, 0) rotate(0); } }
+
+        .anim-spread-left { animation: shuffleSpreadLeft 0.35s ease-in-out 3; }
+        .anim-spread-right { animation: shuffleSpreadRight 0.35s ease-in-out 3; }
+        .anim-spread-up { animation: shuffleSpreadUp 0.35s ease-in-out 3; }
+
+        .center-card-slot {
+            position: absolute; width: 120px; height: 175px; background: #ffffff !important;
+            border: 3px solid #000 !important; border-radius: 8px; font-size: 22px; font-weight: bold;
+            display: none; flex-direction: column; justify-content: space-between; padding: 4px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.9); z-index: 100; transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .center-card-slot.is-dehla { z-index: 250 !important; box-shadow: 0 0 20px #ffd700, 0 10px 25px rgba(0,0,0,0.9) !important; border: 3px solid #ffd700 !important; }
+        .center-card-slot.red { color: red !important; }
+        .center-card-slot.black { color: #111 !important; }
+
+        #slot-p1 { bottom: -15px; left: 50px; transform: rotate(-4deg); }
+        #slot-p2 { right: -45px; top: 20px; transform: rotate(10deg); }
+        #slot-p3 { top: -15px; left: 50px; transform: rotate(3deg); }
+        #slot-p4 { left: -45px; top: 20px; transform: rotate(-8deg); }
+
+        #center-total-counter {
+            position: absolute; color: #000000; font-size: 26px; font-weight: 900; z-index: 300;
+            cursor: grab; text-shadow: 0px 0px 4px #ffffff, 0px 0px 4px #ffffff, 0px 0px 4px #ffffff;
+            display: none; top: 40%; left: 45%;
+        }
+        #center-total-counter:active { cursor: grabbing; }
+
+        /* निचला एक्शन पैनल - 3 ऑप्शंस लेफ्ट और 3 ऑप्शंस राइट में विभाजित */
+        .action-panel { 
+            display: flex; width: 100%; justify-content: space-between; padding: 0 20px 4px 20px; 
+            z-index: 10; align-items: center; 
+        }
+        .panel-left-group, .panel-right-group {
+            display: flex; gap: 6px; align-items: center;
+        }
+
+        .btn-play { background: #e91e63; color: white; padding: 5px 8px; font-size: 9px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 #980036; }
+        .btn-collect { background: #00bcd4; color: white; padding: 5px 8px; font-size: 9px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 #006c7a; }
+        .btn-undo { background: #ff5722; color: white; padding: 5px 8px; font-size: 9px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 #b23c17; }
+        .btn-fold { background: #607d8b; color: white; padding: 5px 6px; font-size: 9px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 #37474f; }
+        
+        .mic-dropdown-container { position: relative; display: inline-block; }
+        .btn-mic-main { background: #4caf50; color: white; padding: 5px 8px; font-size: 9px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; box-shadow: 0 2px 0 #2e7d32; }
+        .btn-mic-main.muted { background: #f44336; box-shadow: 0 2px 0 #c62828; }
+        
+        .mic-sub-menu {
+            position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95); border: 2px solid #ffd700; border-radius: 6px;
+            display: none; flex-direction: column; gap: 4px; padding: 5px; z-index: 100; min-width: 75px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+        .mic-sub-menu button {
+            background: #ff9800; color: white; border: none; padding: 4px; font-size: 9px;
+            font-weight: bold; border-radius: 4px; cursor: pointer; text-align: center;
+        }
+        .mic-sub-menu button:active { background: #e65100; }
+
+        .turn-indicator { font-size: 10px; color: #ffeb3b; font-weight: bold; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 3px; margin-bottom: 2px; display: none; }
+        #fireworks-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; display: none; }
+    </style>
+</head>
+<body>
+
+    <canvas id="fireworks-canvas"></canvas>
+
+    <div id="profile-modal-overlay">
+        <div class="profile-modal-content">
+            <div class="profile-title">🎮 प्रोफाइल बनाएं (MH25I)</div>
+            <div class="input-group">
+                <label for="player-name-input">अपना नाम दर्ज करें:</label>
+                <input type="text" id="player-name-input" value="Hafiz" placeholder="आपका नाम...">
+            </div>
+            
+            <div class="upload-container">
+                <div class="photo-preview-box" id="modal-photo-preview"></div>
+                <label for="gallery-photo-input" class="btn-upload-photo">📷 गैलरी से फोटो चुनें</label>
+                <input type="file" id="gallery-photo-input" accept="image/*" style="display:none;" onchange="handlePhotoUpload(event)">
+            </div>
+
+            <button class="btn-save-profile" onclick="savePlayerProfile()">गेम शुरू करें 🚀</button>
+        </div>
+    </div>
+
+    <div id="game-notification">
+        <span id="notif-text">सूचना यहाँ आएगी</span>
+        <button class="close-btn" onclick="hideNotification()">✕</button>
+    </div>
+
+    <div id="match-modal-overlay">
+        <div class="match-modal-content">
+            <div class="match-modal-title" id="modal-title">मैच का परिणाम</div>
+            <div class="match-modal-body" id="modal-body">सूचना...</div>
+            <button class="btn-modal-ok" onclick="closeMatchModal()">ओके / चाल जारी रखें</button>
+        </div>
+    </div>
+
+    <!-- Top Bar: Team A [1,3] & Team B [2,4] Scores -->
+    <div class="top-bar">
+        <div class="kot-scoreboard">
+            <span class="kot-team">Team A [<span id="team-a-p1">Hafiz</span>, <span id="team-a-p3">बॉट 3</span>] गधे [कोट]: <strong class="kot-count" id="kot-team-a">0</strong></span>
+            <span style="color:#ffd700;"> | </span>
+            <span class="kot-team">Team B [<span id="team-b-p2">बॉट 2</span>, <span id="team-b-p4">बॉट 4</span>] गधे [कोट]: <strong class="kot-count" id="kot-team-b">0</strong></span>
+        </div>
+    </div>
+
+    <div class="game-board">
+        <!-- Player 3 (Top with Side Controls) -->
+        <div class="player-box p-top" id="box-p3">
+            <div class="timer-badge" id="timer-p3">60s</div>
+            
+            <div class="p3-wrapper">
+                <!-- Left Side 2×2 Grid -->
+                <div class="side-buttons-left">
+                    <button class="btn-action btn-matchmaking" onclick="startOnlineMatchmaking()">🌐 खिलाड़ी खोजें</button>
+                    <button class="btn-action btn-room" onclick="createNewOnlineRoom()">🏠 नया टेबल</button>
+                    <button class="btn-action btn-join" onclick="joinExistingOnlineRoom()">🔑 री-कनेक्ट</button>
+                    <button class="btn-action btn-whatsapp" onclick="shareOnWhatsApp()">💬 WhatsApp शेयर</button>
+                </div>
+
+                <!-- Player 3 Center Info Box -->
+                <div>
+                    <div class="turn-indicator" id="turn-p3" style="text-align:center;">▶ टर्न</div>
+                    <div class="player-info">
+                        <div class="avatar" id="avatar-display-p3">3</div>
+                        <div class="p-details">
+                            <div class="p-name" id="name-p3">बॉट 3</div>
+                            <div class="stats-single-line">
+                                <span class="score-board">संग्रह: <span id="score-p3">0</span></span>
+                                <span>|</span>
+                                <span class="dehla-symbols" id="dehla-p3">दहले: 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side 3×2 Grid -->
+                <div class="side-buttons-right">
+                    <button class="btn-action" style="background:#9c27b0;" onclick="shuffleDeck()">🎴 ताश फेंटें</button>
+                    <select id="card-count-select" onchange="updateSelectedCount(this)">
+                        <option value="5" selected>5 पत्ते</option>
+                        <option value="4">4 पत्ते</option>
+                        <option value="3">3 पत्ते</option>
+                        <option value="2">2 पत्ते</option>
+                        <option value="1">1 पत्ता</option>
+                    </select>
+                    <button class="btn-action" style="background:#ff9800;" onclick="dealMoreCards()">🎯 बांटें</button>
+
+                    <button class="btn-action" style="background:#795548;" onclick="copyRoomID()">📋 कॉपी ID</button>
+                    <div class="cut-color-box" id="trump-status">कट कलर: तय नहीं</div>
+                    <div class="cut-color-box" style="background:linear-gradient(135deg, #0d47a1, #1565c0);">डेक: <span id="deck-count">52</span></div>
+                </div>
+            </div>
+
+            <div class="hand" id="p3-hand"></div>
+        </div>
+
+        <!-- Player 4 (Left) -->
+        <div class="player-box p-left" id="box-p4">
+            <div class="timer-badge" id="timer-p4">60s</div>
+            <div class="turn-indicator" id="turn-p4">▶ टर्न</div>
+            <div class="player-info">
+                <div class="avatar" id="avatar-display-p4">4</div>
+                <div class="p-details">
+                    <div class="p-name" id="name-p4">बॉट 4</div>
+                    <div class="stats-single-line">
+                        <span class="score-board">संग्रह: <span id="score-p4">0</span></span>
+                        <span>|</span>
+                        <span class="dehla-symbols" id="dehla-p4">दहले: 0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hand" id="p4-hand"></div>
+        </div>
+
+        <!-- Center Table -->
+        <div class="center-table" id="center-table" ondragover="allowDrop(event)" ondrop="dropCardToTable(event)">
+            <div class="deck-container" id="deck-container" onclick="shuffleDeck()">
+                <div class="deck-card-back" id="deck-bot" style="top: 0px; left: 0px; z-index: 1;"></div>
+                <div class="deck-card-back" id="deck-mid" style="top: -2px; left: -2px; z-index: 2;"></div>
+                <div class="deck-card-back" id="deck-top" style="top: -4px; left: -4px; z-index: 3;">♠</div>
+            </div>
+
+            <div id="slot-p1" class="center-card-slot"></div>
+            <div id="slot-p2" class="center-card-slot"></div>
+            <div id="slot-p3" class="center-card-slot"></div>
+            <div id="slot-p4" class="center-card-slot"></div>
+
+            <div id="center-total-counter">0</div>
+        </div>
+
+        <!-- Player 2 (Right) -->
+        <div class="player-box p-right" id="box-p2">
+            <div class="timer-badge" id="timer-p2">60s</div>
+            <div class="turn-indicator" id="turn-p2">▶ टर्न</div>
+            <div class="player-info">
+                <div class="avatar" id="avatar-display-p2">2</div>
+                <div class="p-details">
+                    <div class="p-name" id="name-p2">बॉट 2</div>
+                    <div class="stats-single-line">
+                        <span class="score-board">संग्रह: <span id="score-p2">0</span></span>
+                        <span>|</span>
+                        <span class="dehla-symbols" id="dehla-p2">दहले: 0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hand" id="p2-hand"></div>
+        </div>
+
+        <!-- Player 1 (Bottom - You) -->
+        <div class="player-box p-bottom" id="box-p1">
+            <div class="timer-badge" id="timer-p1">60s</div>
+            <div class="hand" id="p1-hand" ondragover="allowDrop(event)" ondrop="dropCardToHand(event)"></div>
+            <div class="turn-indicator" id="turn-p1">▶ टर्न</div>
+        </div>
+    </div>
+
+    <!-- Bottom Action Panel (3 Left & 3 Right) -->
+    <div class="action-panel">
+        <!-- Left Side 3 Options -->
+        <div class="panel-left-group">
+            <button class="btn-play" onclick="playCard(0)">🎯 अपनी चाल चलें</button>
+            <button class="btn-fold" onclick="foldCurrentPlayer()">🚫 चाल बंद</button>
+            <button class="btn-collect" onclick="collectTableCards()">📥 पत्ते उठाएं</button>
+        </div>
+
+        <!-- Right Side 3 Options -->
+        <div class="panel-right-group">
+            <button class="btn-undo" onclick="undoLastCollection()">↩️ पत्ते वापस</button>
+            <button class="btn-action" style="background:#e91e63; width:auto; padding:5px 8px; font-size:9px;" onclick="undoLastPlayedCard()">↩️ पत्ता वापस</button>
+            
+            <div class="mic-dropdown-container">
+                <button class="btn-mic-main" id="btn-mic-main" onclick="toggleMicDropdown()">🎤 माइक: ऑन</button>
+                <div class="mic-sub-menu" id="mic-sub-menu">
+                    <button onclick="setMicStatus(true)">माइक ऑन</button>
+                    <button onclick="setMicStatus(false)" style="background:#f44336;">माइक ऑफ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            databaseURL: "https://mh21-cardgame-default-rtdb.firebaseio.com/"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const dbRef = firebase.database();
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        let currentRoomID = "MH25-LOBBY";
+        let myAssignedSeat = 0; 
+        let netKotScore = 0; 
+        let isMatchDecided = false;
+        let isFirstMatchEver = true;
+        let userCustomPhotoData = null;
+        let myPlayerName = "Hafiz";
+
+        let turnTimerInterval = null;
+        let timeLeft = 60;
+
+        let playerNamesList = [myPlayerName, 'बॉट 2', 'बॉट 3', 'बॉट 4'];
+        let isBotActive = [false, true, true, true]; 
+
+        if (window.screen && window.screen.orientation && window.screen.orientation.lock) {
+            window.screen.orientation.lock('landscape').catch(() => {});
+        }
+
+        function toggleMicDropdown() {
+            let menu = document.getElementById('mic-sub-menu');
+            menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function setMicStatus(status) {
+            let mainBtn = document.getElementById('btn-mic-main');
+            let menu = document.getElementById('mic-sub-menu');
+            menu.style.display = 'none';
+            if (status) {
+                mainBtn.innerText = "🎤 माइक: ऑन";
+                mainBtn.classList.remove('muted');
+                showNotification("🎤 माइक चालू कर दिया गया है।");
+            } else {
+                mainBtn.innerText = "🔇 माइक: ऑफ";
+                mainBtn.classList.add('muted');
+                showNotification("🔇 माइक बंद कर दिया गया है।");
+            }
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('.mic-dropdown-container')) {
+                let menu = document.getElementById('mic-sub-menu');
+                if (menu) menu.style.display = 'none';
+            }
+        }
+
+        function handlePhotoUpload(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    userCustomPhotoData = e.target.result;
+                    document.getElementById('modal-photo-preview').innerHTML = `<img src="${userCustomPhotoData}" alt="DP">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function savePlayerProfile() {
+            let nameInput = document.getElementById('player-name-input').value;
+            myPlayerName = (nameInput && nameInput.trim() !== "") ? nameInput.trim() : "Hafiz";
+            playerNamesList[0] = myPlayerName;
+            updateTeamNamesDisplay();
+            document.getElementById('profile-modal-overlay').style.display = 'none';
+            showNotification(`🎉 स्वागत है ${myPlayerName}! ऑनलाइन लॉबी से जुड़े।`);
+        }
+
+        function updateTeamNamesDisplay() {
+            document.getElementById('team-a-p1').innerText = playerNamesList[0];
+            document.getElementById('team-a-p3').innerText = playerNamesList[2];
+            document.getElementById('team-b-p2').innerText = playerNamesList[1];
+            document.getElementById('team-b-p4').innerText = playerNamesList[3];
+
+            document.getElementById('name-p2').innerText = playerNamesList[1];
+            document.getElementById('name-p3').innerText = playerNamesList[2];
+            document.getElementById('name-p4').innerText = playerNamesList[3];
+        }
+
+        function startOnlineMatchmaking() {
+            let matchmakingTime = 30;
+            showNotification(`🌐 ऑनलाइन खिलाड़ियों की तलाश जारी है... (${matchmakingTime}s)`);
+
+            let searchInterval = setInterval(() => {
+                matchmakingTime--;
+                if (matchmakingTime > 0) {
+                    showNotification(`🌐 ऑनलाइन खिलाड़ियों की तलाश जारी है... (${matchmakingTime}s)`);
+                } else {
+                    clearInterval(searchInterval);
+                    showNotification(`🤖 30 सेकंड पूरे! स्मार्ट बॉट्स सक्रिय, टेबल तैयार।`);
+                    shuffleDeck();
+                }
+            }, 1000);
+        }
+
+        function createNewOnlineRoom() {
+            let randomNum = Math.floor(1000 + Math.random() * 9000);
+            currentRoomID = `MH25-${randomNum}`;
+            myAssignedSeat = 0;
+            
+            dbRef.ref('rooms/' + currentRoomID).set({
+                host: myPlayerName,
+                playersCount: 1,
+                activeTurn: 1,
+                playerNames: playerNamesList
+            });
+            listenToRoomSync();
+            showNotification(`🎉 नया ऑनलाइन टेबल तैयार! ID: ${currentRoomID}`);
+        }
+
+        function joinExistingOnlineRoom() {
+            let userEnteredID = prompt("जुड़ने के लिए टेबल (Room ID) दर्ज करें:", "MH25-");
+            if (userEnteredID && userEnteredID.trim() !== "") {
+                currentRoomID = userEnteredID.trim().toUpperCase();
+                
+                dbRef.ref('rooms/' + currentRoomID).once('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        let roomData = snapshot.val();
+                        let currentCount = roomData.playersCount || 1;
+                        if (currentCount < 4) {
+                            myAssignedSeat = currentCount;
+                            playerNamesList[myAssignedSeat] = myPlayerName;
+                            dbRef.ref('rooms/' + currentRoomID + '/playersCount').set(currentCount + 1);
+                            dbRef.ref('rooms/' + currentRoomID + '/playerNames').set(playerNamesList);
+                            isBotActive[myAssignedSeat] = false;
+                        }
+                        listenToRoomSync();
+                        updateTeamNamesDisplay();
+                        showNotification(`✅ आप टेबल ${currentRoomID} पर जुड़ गए!`);
+                    } else {
+                        alert("यह टेबल ID मौजूद नहीं है!");
+                    }
+                });
+            }
+        }
+
+        function listenToRoomSync() {
+            dbRef.ref('rooms/' + currentRoomID).on('value', (snapshot) => {
+                let roomData = snapshot.val();
+                if (roomData) {
+                    if (roomData.playerNames) {
+                        playerNamesList = roomData.playerNames;
+                        updateTeamNamesDisplay();
+                    }
+                    if (roomData.gameState) {
+                        let state = roomData.gameState;
+                        if (state.activeTurn !== undefined) activeTurn = state.activeTurn;
+                        if (state.scores) scores = state.scores;
+                        updateScoresDisplay();
+                        updateTurnIndicators();
+                    }
+                }
+            });
+        }
+
+        function syncGameStateToCloud() {
+            dbRef.ref('rooms/' + currentRoomID + '/gameState').set({
+                activeTurn: activeTurn,
+                scores: scores
+            });
+        }
+
+        function copyRoomID() {
+            navigator.clipboard.writeText(currentRoomID).then(() => {
+                showNotification(`📋 टेबल ID (${currentRoomID}) कॉपी हो गई!`);
+            }).catch(() => {
+                showNotification(`टेबल ID: ${currentRoomID}`);
+            });
+        }
+
+        function shareOnWhatsApp() {
+            let shareText = `आइए मेरे साथ ऑनलाइन 'MH21' (Dehla Pakad) खेलें! मेरी टेबल ID है: ${currentRoomID}। इस ID से गेम में जुड़े!`;
+            let whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        function updateKotDisplay() {
+            let teamAKot = netKotScore < 0 ? Math.abs(netKotScore) : 0;
+            let teamBKot = netKotScore > 0 ? netKotScore : 0;
+            document.getElementById('kot-team-a').innerText = teamAKot;
+            document.getElementById('kot-team-b').innerText = teamBKot;
+        }
+
+        let notifTimer = null;
+        function showNotification(message) {
+            let notifBox = document.getElementById('game-notification');
+            let notifText = document.getElementById('notif-text');
+            notifText.innerText = message;
+            notifBox.style.display = 'flex';
+            if (notifTimer) clearTimeout(notifTimer);
+            notifTimer = setTimeout(() => { hideNotification(); }, 3500);
+        }
+
+        function hideNotification() {
+            document.getElementById('game-notification').style.display = 'none';
+        }
+
+        function openMatchModal(title, text) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-body').innerHTML = text;
+            document.getElementById('match-modal-overlay').style.display = 'flex';
+        }
+
+        function closeMatchModal() {
+            document.getElementById('match-modal-overlay').style.display = 'none';
+        }
+
+        function playBeepSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function startTurnTimer() {
+            if (turnTimerInterval) clearInterval(turnTimerInterval);
+            timeLeft = 60;
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`timer-p${i}`).style.display = 'none';
+            }
+            if (activeTurn === null) return;
+
+            let badge = document.getElementById(`timer-p${activeTurn + 1}`);
+            badge.style.display = 'block';
+            badge.innerText = `${timeLeft}s`;
+
+            turnTimerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft >= 0) {
+                    badge.innerText = `${timeLeft}s`;
+                    if (timeLeft <= 10) playBeepSound();
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(turnTimerInterval);
+                    badge.style.display = 'none';
+                    autoPlayBotMove(activeTurn);
+                }
+            }, 1000);
+
+            if (isBotActive[activeTurn] && activeTurn !== null) {
+                setTimeout(() => {
+                    if (isBotActive[activeTurn] && activeTurn !== null) {
+                        autoPlayBotMove(activeTurn);
+                    }
+                }, 1000);
+            }
+        }
+
+        function stopTurnTimer() {
+            if (turnTimerInterval) clearInterval(turnTimerInterval);
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`timer-p${i}`).style.display = 'none';
+            }
+        }
+
+        function autoPlayBotMove(pIdx) {
+            if (isFolded[pIdx] || allHands[pIdx].length === 0) return;
+            let hand = allHands[pIdx];
+            let validCard = hand.find(c => !leadingSuit || c.suit === leadingSuit) || hand[0];
+            if (validCard) {
+                selectedCard = validCard;
+                selectedPlayerIndex = pIdx;
+                playCard(pIdx);
+            }
+        }
+
+        function playNaturalCardShuffleSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let bufferSize = audioCtx.sampleRate * 0.9;
+            let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            let data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) { data[i] = (Math.random() * 2 - 1); }
+
+            let noiseSource = audioCtx.createBufferSource();
+            noiseSource.buffer = buffer;
+            let filter = audioCtx.createBiquadFilter();
+            filter.type = "bandpass";
+            filter.frequency.setValueAtTime(1800, audioCtx.currentTime);
+            filter.Q.setValueAtTime(2.2, audioCtx.currentTime);
+
+            let gain = audioCtx.createGain();
+            let now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(0.01, now);
+            for (let t = 0.04; t < 0.8; t += 0.045) {
+                gain.gain.setValueAtTime(0.3, now + t);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + t + 0.035);
+            }
+            noiseSource.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noiseSource.start(now);
+            noiseSource.stop(now + 0.9);
+        }
+
+        function playCardSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playDehlaSpecialSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let now = audioCtx.currentTime;
+            let freqs = [523.25, 659.25, 783.99, 1046.50];
+            freqs.forEach((freq, index) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + index * 0.08);
+                gain.gain.setValueAtTime(0.3, now + index * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.4);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + index * 0.08);
+                osc.stop(now + index * 0.08 + 0.4);
+            });
+        }
+
+        function playRuffleTadhSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let now = audioCtx.currentTime;
+            for (let i = 0; i < 5; i++) {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(450 + (i % 2) * 200, now + i * 0.05);
+                osc.frequency.exponentialRampToValueAtTime(120, now + i * 0.05 + 0.04);
+                gain.gain.setValueAtTime(0.2, now + i * 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.04);
+                osc.start(now + i * 0.05);
+                osc.stop(now + i * 0.05 + 0.04);
+            }
+        }
+
+        function playCutTrumpSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(250, audioCtx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.12);
+        }
+
+        let fireworksActive = false;
+        function startFireworks() {
+            let canvas = document.getElementById('fireworks-canvas');
+            canvas.style.display = 'block';
+            let ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let particles = [];
+            let colors = ['#ff0044', '#00ff66', '#00ccff', '#ffcc00', '#ff00ff', '#ffffff'];
+
+            function createFirework(startX, startY) {
+                let pCount = 50;
+                for (let i = 0; i < pCount; i++) {
+                    let angle = Math.random() * Math.PI * 2;
+                    let speed = Math.random() * 6 + 2;
+                    particles.push({
+                        x: startX, y: startY,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        alpha: 1, color: colors[Math.floor(Math.random() * colors.length)],
+                        size: Math.random() * 3 + 1
+                    });
+                }
+            }
+
+            fireworksActive = true;
+            let fireInterval = setInterval(() => {
+                createFirework(100 + Math.random() * 80, canvas.height - 100);
+                createFirework(canvas.width - (100 + Math.random() * 80), canvas.height - 100);
+            }, 400);
+
+            function animateFireworks() {
+                if (!fireworksActive) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach((p, index) => {
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.alpha -= 0.015;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(p.alpha, 0);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                    if (p.alpha <= 0) particles.splice(index, 1);
+                });
+                requestAnimationFrame(animateFireworks);
+            }
+            animateFireworks();
+
+            setTimeout(() => {
+                fireworksActive = false;
+                clearInterval(fireInterval);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.style.display = 'none';
+            }, 5000);
+        }
+
+        const CARD_RANKS = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
+
+        let fullDeck = [];
+        let allHands = [[], [], [], []];
+        let isFolded = [false, false, false, false];
+        let selectedCard = null;
+        let selectedPlayerIndex = null;
+        let chosenCount = 5;
+        
+        let dealerIndex = 0;
+        let activeTurn = (dealerIndex + 1) % 4;
+        let isFirstRoundOfGame = true;
+        let playedOnTable = [null, null, null, null];
+        let scores = [0, 0, 0, 0];
+        let collectedDehlas = [[], [], [], []];
+        
+        let leadingSuit = null;
+        let permanentTrumpSuit = null; 
+        let tableCardPiles = [[], [], [], []];
+        let lastRoundWinner = null;
+        let previousRoundWinner = null;
+        let lastLosingTeamKey = "Team B";
+
+        let playedHistoryStack = []; 
+        let lastCollectionHistory = null;
+
+        function updateSelectedCount(selectElem) {
+            chosenCount = parseInt(selectElem.value);
+        }
+
+        function createFullDeck() {
+            const suits = ['♠', '♥', '♦', '♣'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            fullDeck = [];
+            for (let s of suits) {
+                for (let v of values) {
+                    fullDeck.push({ value: v, suit: s, color: (s === '♥' || s === '♦') ? 'red' : 'black' });
+                }
+            }
+        }
+
+        function getCardBodyHTML(val, suit, isSmall) {
+            let pSize = isSmall ? '11px' : '22px';
+            if (val === 'A') {
+                let aceSize = isSmall ? '32px' : '55px';
+                return `<div style="position:absolute; top:52%; left:50%; transform:translate(-50%,-50%); font-size:${aceSize};">${suit}</div>`;
+            } 
+            else if (val === 'K' || val === 'Q' || val === 'J') {
+                let fullCardUrl = '';
+                if (val === 'K') {
+                    if (suit === '♣') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiCy_nAjs5paMSZAQZhTWXZJsXgxd3v_cbMVhwyTq3Wd5Rvm0YblQn29O7AKyhX89HPu2aXnq6waOjGnGFVSO6ie9jxu8JB38IhMVcTkbc52GZWbRFaMAmZ94JecO5DszgRQOpugl3nKSqJIt3pfsKmQbw-DW2qeKO0-9-TrQlKETyH1GuK-0gjVpFXW7w/s320/chidi%20ka%20badshah.png';
+                    else if (suit === '♠') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgGNKSKMRy5Ozo26lBB_3X2eqUKdtn8iFdwQK8wjPPXDUc-ML6SVf9KbYiTgYPAKc-i_6E6cr_tzAf7UP5_ya2QadOqX4EG2e6L1ILvAZFvHaHzYANE7xL0Q9J_7fRWvdhMI7q5U7keZAANsNF0Nb_4cHtKBH_nMZzFSRAaNRwzX9ZOGI8ER8uAeQ63L9g/s320/hukum%20ka%20badshah.png';
+                    else if (suit === '♥') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhoMGS4xlBwvhy120L_j3p-BHYI_cMS7t-lhk9DK9VqFxRw3lO8SF-RrSeGPvMDRqbaqNodWwZ7CAyxyeBu3eZX0RVhtZOM6LFt0g0NW0VMb_b88EQBYJkYNxNaa5ZWgu0wJrjXhNQfC8bbYnJ6K2nlIFJdxdtq52Z6FWMuTYCun3leuK8XWrxWq5qeICo/s320/pan%20ka%20bashah.png';
+                    else if (suit === '♦') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjojUeDAc5IJgAkP9JcNUteBTouzjh1k8SLzd5iQ7BJ7PvnyYLimKmJqGNrACdtYvw06aAjkCXG1ttJqVeo3EGPWTzKc7w-oX9r4OYooZIvhe_glnR8yk46QEnI4b-GEtMWYt2Etx7w7bW9xuGteNWrBfGLEywAy6Lkvx1rAeCjOWpOar4gFYBPLC1vXOI/s320/eent%20ka%20badshah.png';
+                } else if (val === 'Q') {
+                    if (suit === '♠') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgJGX1fsNkb33A8RpJPwTNBl6qhE1sAGu0tfqgwQgEz3kVNO0rfUlonDI66NP3XYBprOVPwWZ1RGzfWBLYe1VtrexE9Rix4mORIczuqRLZk0ppmz5KSFRsqn4fC9GPSoeLbz3aQC9tXpEI5HHEns-Bwr9mLv5iWQCb8tH3llzjIbZNgMNzURuA7rirNG9A/s320/hukum%20ki%20begam.png';
+                    else if (suit === '♣') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhkIrJtip5ItQX_IWa0hnPtrHlaZtoTP-oMcb6DTYmjHSeY1d8WLEzjflrDR2jiDRTNkhn8Snpx0qIAT4SMHlZ6gNuKxlVtP6xCCkBTxyCfC8wxuWtW6V-WGsx-tW0t2AnUeqUbnywltK7zLskpi_LuzIli4SOuSoHMftwwGXxDXiqKyFGiENL8OgcsiQM/s320/chidi%20ki%20begam.png';
+                    else if (suit === '♥') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiuakTXAlqJyOhhsNkB2-w3UQFrcSadYd5ZFwqbAiswS14vrhb4DzserkJH1YCCgsRgwKh4OruW1T6j-BLjg46HSmdCTRzpm4IsFY_7upTfpxoNqCRZB5j_coG_8hpm3COS-_XaRHmUH_7Vj2joBN1V0293Mke7M_keee-tMCcb-6ccXz0OxiIAWxKTPcQ/s320/pan%20ki%20begam.png';
+                    else if (suit === '♦') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiY-l18ayJboW61xidJyzQmkkcAUIkAKuERvqhceLYMXQa5IxoxYVj_uJQWVp_9hyIs-z0F5LC-yQD6dmzwD2Hi6WX9plt8bHOiO77ySCVj4onjbg74lM05fSAxyL6xNVjOHqMS7CMC0nRQwL1fdEJTn4OdM1j89tkUB6MkZnkc_4HQs19vPti6i0Y0mk0/s320/eent%20ki%20begam.png';
+                } else if (val === 'J') {
+                    if (suit === '♠') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjEReyVSTS0g_iD98cNfQ5FTgn3Jr1t4RPwRiU5lK5kVqvx8ove1UV1OPHx5xfB2pysTfNMdbFwR06HpjCMzny4c5FnNe5aJZu8SGxCBkN1N8hJgtXBAIvbZ7O-7b4L3Me2TorO3Mf6AZHAh3OMhGj19LEjNG19Ze0r55u9ZP-m2W44NLnuRNJ5C_sB7Wg/s320/hukum%20ka%20jack.png';
+                    else if (suit === '♣') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi9YO-PuEifplW3aU_Iv0o-qtGFWGMTCS4pgZx3b1Vv_MMhsF6-WEVicy76arjOD23jb9P2iJhTk881R-TvJHDDT58qegatYuDypVkQWlNsVI6qbe4E1n0Rg23gfH_WqunLKnBpJlEbabUo-Jnthx7_aRbiFeJYdCrar2utI55WgJbcsTHz_ozDE0VfT2Y/s320/chidi%20ka%20jack.png';
+                    else if (suit === '♥') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgHWZkTqV488LTJtt_IwHhS7TiWmYt1wOp0N_1XzGAvmsy-XjXOoPCx_48y9sLwAsidOjrQf3AZpZfdjLVNQlYGCwgu8HcsxDOyy9UlJvMG2zP1CPeZBH72TnKbgZCWG0P3iEja8OTJtqYRQulYO2y7e4XNFjXiiOo9PxtCxmfKzugt9VdA7cmigVB2GUw/s320/pan%20ka%20jek.png';
+                    else if (suit === '♦') fullCardUrl = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj6riI4wKqBZdrxL-YZlFEsBhRjwKtDLnFSTDvEFTZmhJ1ETI6hKMXriOGF20iHjZsCG-NxCeOiN8hxY6n3V6tSzcf7fWblab_ewPfVkapHLOMzOmN9pzMMBXuojL0XfVwyM-Sbc3-v0W1ukkjA6RJwU4gGTpa8lvy3Nc-FHStvVDa2-G4QNythi_hZD7I/s320/eent%20ka%20jack.png';
+                }
+                return `<div class="full-card-image"><img src="${fullCardUrl}" alt="${val} of ${suit}"></div>`;
+            }
+            else if (val === '10') {
+                return `
+                    <div class="ten-card-container">
+                        <div class="pip-col">
+                            <span style="font-size:${pSize};">${suit}</span>
+                            <span style="font-size:${pSize};">${suit}</span>
+                            <span style="font-size:${pSize};">${suit}</span>
+                            <span style="font-size:${pSize}; transform:rotate(180deg);">${suit}</span>
+                            <span style="font-size:${pSize}; transform:rotate(180deg);">${suit}</span>
+                        </div>
+                        <div class="pip-col">
+                            <span style="font-size:${pSize};">${suit}</span>
+                            <span style="font-size:${pSize};">${suit}</span>
+                            <span style="font-size:${pSize};">${suit}</span>
+                            <span style="font-size:${pSize}; transform:rotate(180deg);">${suit}</span>
+                            <span style="font-size:${pSize}; transform:rotate(180deg);">${suit}</span>
+                        </div>
+                    </div>
+                `;
+            }
+            else {
+                let num = parseInt(val);
+                let p = `<span style="font-size:${pSize}">${suit}</span>`;
+                let pr = `<span style="font-size:${pSize}; transform:rotate(180deg);">${suit}</span>`;
+                if (num === 2) return `<div class="card-pip-container"><div class="pip-col-mid" style="width:100%;">${p}${pr}</div></div>`;
+                else if (num === 3) return `<div class="card-pip-container"><div class="pip-col-mid" style="width:100%;">${p}${p}${pr}</div></div>`;
+                else if (num === 4) return `<div class="card-pip-container"><div class="pip-col">${p}${pr}</div><div class="pip-col">${p}${pr}</div></div>`;
+                else if (num === 5) return `<div class="card-pip-container"><div class="pip-col">${p}${pr}</div><div class="pip-col-mid">${p}</div><div class="pip-col">${p}${pr}</div></div>`;
+                else if (num === 6) return `<div class="card-pip-container"><div class="pip-col">${p}${p}${pr}</div><div class="pip-col">${p}${p}${pr}</div></div>`;
+                else if (num === 7) return `<div class="card-pip-container"><div class="pip-col">${p}${p}${pr}</div><div class="pip-col-mid" style="justify-content:flex-start; padding-top:18%;">${p}</div><div class="pip-col">${p}${p}${pr}</div></div>`;
+                else if (num === 8) return `<div class="card-pip-container"><div class="pip-col">${p}${p}${pr}</div><div class="pip-col-mid">${p}${pr}</div><div class="pip-col">${p}${p}${pr}</div></div>`;
+                else if (num === 9) return `<div class="card-pip-container"><div class="pip-col">${p}${p}${pr}${pr}</div><div class="pip-col-mid">${p}</div><div class="pip-col">${p}${p}${pr}${pr}</div></div>`;
+            }
+        }
+
+        function shuffleDeck() {
+            if (!isFirstMatchEver) {
+                if (lastLosingTeamKey === "Team A") { dealerIndex = 0; } else { dealerIndex = 1; }
+            } else {
+                dealerIndex = 0;
+            }
+            
+            activeTurn = (dealerIndex + 1) % 4;
+            isMatchDecided = false;
+
+            playNaturalCardShuffleSound();
+            let bot = document.getElementById('deck-bot');
+            let mid = document.getElementById('deck-mid');
+            let top = document.getElementById('deck-top');
+
+            bot.classList.add('anim-spread-left');
+            mid.classList.add('anim-spread-right');
+            top.classList.add('anim-spread-up');
+
+            setTimeout(() => {
+                bot.classList.remove('anim-spread-left');
+                mid.classList.remove('anim-spread-right');
+                top.classList.remove('anim-spread-up');
+            }, 1100);
+
+            createFullDeck();
+            for (let i = fullDeck.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                [fullDeck[i], fullDeck[j]] = [fullDeck[j], fullDeck[i]];
+            }
+            
+            allHands = [[], [], [], []];
+            playedOnTable = [null, null, null, null];
+            scores = [0, 0, 0, 0];
+            collectedDehlas = [[], [], [], []];
+            tableCardPiles = [[], [], [], []];
+            isFolded = [false, false, false, false];
+            playedHistoryStack = [];
+            lastCollectionHistory = null;
+            leadingSuit = null;
+            permanentTrumpSuit = null;
+            isFirstRoundOfGame = true;
+            lastRoundWinner = null;
+            previousRoundWinner = null;
+
+            clearTableSlots();
+            updateTotalTableCounter();
+            updateTurnIndicators();
+
+            document.getElementById('trump-status').innerText = 'कट कलर: तय नहीं';
+            renderAllHands();
+            updateKotDisplay();
+            
+            if (isFirstMatchEver) {
+                showNotification(`🎮 पहला गेम शुरू! ${dealerIndex + 1} नंबर वाला खिलाड़ी ताश फेंट रहा है...`);
+            } else {
+                showNotification(`📢 हारी हुई टीम (${lastLosingTeamKey}) के ${dealerIndex + 1} नंबर खिलाड़ी ने ताश फेंटा!`);
+            }
+            startTurnTimer();
+        }
+
+        function dealMoreCards() {
+            if (fullDeck.length === 0) { alert('डेक के सभी पत्ते समाप्त हो चुके हैं!'); return; }
+            let totalNeeded = chosenCount * 4;
+            if (fullDeck.length < totalNeeded) { alert(`डेक में केवल ${fullDeck.length} पत्ते बचे हैं!`); return; }
+
+            let pIndex = (dealerIndex + 1) % 4; 
+            let cardsGivenToCurrent = 0;
+            let playersCounted = 0;
+
+            let dealInterval = setInterval(() => {
+                if (playersCounted >= 4) {
+                    clearInterval(dealInterval);
+                    startTurnTimer();
+                    syncGameStateToCloud();
+                    return;
+                }
+                if (fullDeck.length > 0) {
+                    allHands[pIndex].push(fullDeck.pop());
+                    playCardSound();
+                    renderAllHands();
+                    document.getElementById('deck-count').innerText = fullDeck.length;
+                }
+                cardsGivenToCurrent++;
+                if (cardsGivenToCurrent >= chosenCount) {
+                    cardsGivenToCurrent = 0;
+                    pIndex = (pIndex + 1) % 4;
+                    playersCounted++;
+                }
+            }, 80);
+        }
+
+        function renderAllHands() {
+            for (let p = 1; p <= 4; p++) {
+                let handDiv = document.getElementById(`p${p}-hand`);
+                handDiv.innerHTML = '';
+                let cards = allHands[p - 1];
+                let total = cards.length;
+                let isSmall = (p !== 1);
+
+                cards.forEach((card, index) => {
+                    let div = document.createElement('div');
+                    
+                    if (p === 1) {
+                        div.className = `card ${card.color}`;
+                        div.innerHTML = `
+                            <div class="card-corner card-corner-top"><span>${card.value}</span><span>${card.suit}</span></div>
+                            ${getCardBodyHTML(card.value, card.suit, false)}
+                            <div class="card-corner card-corner-bottom"><span>${card.value}</span><span>${card.suit}</span></div>
+                        `;
+                        div.onclick = () => {
+                            document.querySelectorAll('#p1-hand .card').forEach(el => el.classList.remove('selected'));
+                            div.classList.add('selected');
+                            selectedCard = card;
+                            selectedPlayerIndex = 0;
+                        };
+                        div.ontouchstart = (e) => {
+                            e.stopPropagation();
+                            document.querySelectorAll('#p1-hand .card').forEach(el => el.classList.remove('selected'));
+                            div.classList.add('selected');
+                            selectedCard = card;
+                            selectedPlayerIndex = 0;
+                        };
+                    } else {
+                        div.className = `card`;
+                        div.innerHTML = `<div class="card-back-design">♠</div>`;
+                    }
+
+                    let angle = (index - (total - 1) / 2) * 6;
+                    let step = isSmall ? 23 : 34;
+                    let xOffset = (index - (total - 1) / 2) * step;
+                    let yOffset = Math.abs(index - (total - 1) / 2) * 3;
+                    div.style.transform = `translate(${xOffset}px, ${yOffset}px) rotate(${angle}deg)`;
+
+                    if (p === 1) {
+                        div.draggable = true;
+                        div.ondragstart = (e) => {
+                            e.dataTransfer.setData('text/plain', JSON.stringify({ player: 0, cardIndex: index }));
+                        };
+                    }
+
+                    handDiv.appendChild(div);
+                });
+            }
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+
+        function dropCardToTable(ev) {
+            ev.preventDefault();
+            let rawData = ev.dataTransfer.getData('text/plain');
+            if (!rawData) return;
+            try {
+                let data = JSON.parse(rawData);
+                if (data && data.player === 0 && data.cardIndex !== undefined) {
+                    let cardObj = allHands[0][data.cardIndex];
+                    if (cardObj) {
+                        selectedCard = cardObj;
+                        selectedPlayerIndex = 0;
+                        playCard(0);
+                    }
+                }
+            } catch (err) {}
+        }
+
+        function dropCardToHand(ev) { ev.preventDefault(); }
+
+        function foldCurrentPlayer() {
+            if (activeTurn === null) return;
+            stopTurnTimer();
+            isFolded[activeTurn] = true;
+            document.getElementById(`box-p${activeTurn + 1}`).classList.add('folded');
+            showNotification(`${playerNamesList[activeTurn]} ने चाल बंद कर दी!`);
+            getNextTurn();
+            updateTurnIndicators();
+            startTurnTimer();
+        }
+
+        function getNextTurn() {
+            let next = (activeTurn + 1) % 4;
+            let count = 0;
+            while (isFolded[next] && count < 4) {
+                next = (next + 1) % 4;
+                count++;
+            }
+            if (count >= 4) activeTurn = null;
+            else activeTurn = next;
+        }
+
+        function getActivePlayersCount() { return isFolded.filter(f => !f).length; }
+
+        function playCard(playerIndex) {
+            if (isFolded[playerIndex]) { alert(`${playerNamesList[playerIndex]} की चाल बंद है!`); return; }
+            stopTurnTimer();
+
+            let activePlayersCount = getActivePlayersCount();
+            let activeCardsCount = playedOnTable.filter((c, idx) => c !== null && !isFolded[idx]).length;
+
+            if (activeCardsCount >= activePlayersCount) {
+                clearTableSlots();
+                playedOnTable = [null, null, null, null];
+                leadingSuit = null;
+            }
+
+            if (activeTurn !== null && playerIndex !== activeTurn) {
+                showNotification(`अभी क्रम से ${playerNamesList[activeTurn]} की बारी है!`);
+                startTurnTimer();
+                return;
+            }
+
+            if (playedOnTable[playerIndex] !== null) {
+                alert(`${playerNamesList[playerIndex]} पहले ही पत्ता फेंक चुका है!`);
+                startTurnTimer();
+                return;
+            }
+
+            let cardToPlay = null;
+            if (playerIndex === 0) {
+                if (selectedPlayerIndex !== 0 || !selectedCard) {
+                    alert(`कृपया पहले अपना (P1) कोई पत्ता चुनें या खींचकर टेबल पर रखें!`);
+                    startTurnTimer();
+                    return;
+                }
+                cardToPlay = selectedCard;
+            } else {
+                let hand = allHands[playerIndex];
+                cardToPlay = hand.find(c => !leadingSuit || c.suit === leadingSuit) || hand[0];
+            }
+
+            let currentTableCount = playedOnTable.filter((c, idx) => c !== null && !isFolded[idx]).length;
+            if (currentTableCount === 0) {
+                clearTableSlots();
+                leadingSuit = cardToPlay.suit;
+            } else {
+                let hasLeadingSuit = allHands[playerIndex].some(c => c.suit === leadingSuit);
+                if (playerIndex === 0 && hasLeadingSuit && cardToPlay.suit !== leadingSuit) {
+                    alert(`आपके पास ${leadingSuit} का पत्ता है!`);
+                    startTurnTimer();
+                    return;
+                }
+                if (!hasLeadingSuit && cardToPlay.suit !== leadingSuit && !permanentTrumpSuit) {
+                    permanentTrumpSuit = cardToPlay.suit;
+                    updateTrumpStatus();
+                    playCutTrumpSound();
+                    showNotification(`✨ कट कलर: ${permanentTrumpSuit}`);
+                } else if (permanentTrumpSuit && cardToPlay.suit === permanentTrumpSuit) {
+                    playCutTrumpSound();
+                }
+            }
+
+            if (cardToPlay.value === '10') { playDehlaSpecialSound(); } else { playCardSound(); }
+
+            playedOnTable[playerIndex] = cardToPlay;
+            tableCardPiles[playerIndex].push(cardToPlay);
+            updateTotalTableCounter();
+            playedHistoryStack.push({ playerIndex: playerIndex, card: cardToPlay });
+
+            let slot = document.getElementById(`slot-p${playerIndex + 1}`);
+            let dehlaClass = (cardToPlay.value === '10') ? 'is-dehla' : '';
+            slot.className = `center-card-slot ${cardToPlay.color} ${dehlaClass}`;
+            slot.style.display = 'flex';
+            slot.innerHTML = `
+                <div class="card-corner card-corner-top"><span>${cardToPlay.value}</span><span>${cardToPlay.suit}</span></div>
+                ${getCardBodyHTML(cardToPlay.value, cardToPlay.suit, false)}
+                <div class="card-corner card-corner-bottom"><span>${cardToPlay.value}</span><span>${cardToPlay.suit}</span></div>
+            `;
+
+            allHands[playerIndex] = allHands[playerIndex].filter(c => c !== cardToPlay);
+            renderAllHands();
+            selectedCard = null;
+            selectedPlayerIndex = null;
+            if (isFirstRoundOfGame) isFirstRoundOfGame = false;
+
+            syncGameStateToCloud();
+
+            let finalCount = playedOnTable.filter((c, idx) => c !== null && !isFolded[idx]).length;
+            if (finalCount >= activePlayersCount) {
+                let winnerIdx = calculateWinnerAndSetNextTurn();
+                previousRoundWinner = lastRoundWinner;
+                lastRoundWinner = winnerIdx;
+                activeTurn = winnerIdx;
+                updateTurnIndicators();
+                syncGameStateToCloud();
+
+                let totalTableCardsCount = tableCardPiles.reduce((acc, p) => acc + p.length, 0);
+                let isGameEnded = (fullDeck.length === 0 && allHands.every(h => h.length === 0));
+
+                if (totalTableCardsCount >= 48 || isGameEnded) {
+                    let dehlasInPile = [];
+                    tableCardPiles.forEach(pile => {
+                        pile.forEach(card => { if (card.value === '10') dehlasInPile.push(card); });
+                    });
+                    animateCollectionToPlayer(winnerIdx, totalTableCardsCount, () => {
+                        scores[winnerIdx] += totalTableCardsCount;
+                        dehlasInPile.forEach(d => collectedDehlas[winnerIdx].push(d));
+                        tableCardPiles = [[], [], [], []];
+                        clearTableSlots();
+                        updateTotalTableCounter();
+                        syncGameStateToCloud();
+                        showNotification(`🏁 राउंड समाप्त! विनर ${playerNamesList[winnerIdx]} को पत्ते मिल गए।`);
+                        evaluateMatchEndStatus();
+                    });
+                } else {
+                    showNotification(`🏆 राउंड विजेता: ${playerNamesList[winnerIdx]}!`);
+                    startTurnTimer();
+                }
+            } else {
+                getNextTurn();
+                updateTurnIndicators();
+                startTurnTimer();
+            }
+        }
+
+        function animateCollectionToPlayer(winnerIdx, count, callback) {
+            playRuffleTadhSound();
+            let boxId = `box-p${winnerIdx + 1}`;
+            let targetBox = document.getElementById(boxId);
+            let targetRect = targetBox.getBoundingClientRect();
+            let tableRect = document.getElementById('center-table').getBoundingClientRect();
+            let dx = targetRect.left - tableRect.left;
+            let dy = targetRect.top - tableRect.top;
+            let slots = [document.getElementById('slot-p1'), document.getElementById('slot-p2'), document.getElementById('slot-p3'), document.getElementById('slot-p4')];
+            
+            slots.forEach((slot, index) => {
+                if (slot && slot.style.display !== 'none') {
+                    setTimeout(() => {
+                        slot.style.transition = 'all 0.45s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+                        slot.style.transform = `translate(${dx + (index * 4)}px, ${dy + (index * 2)}px) scale(0.15) rotate(${index * 15}deg)`;
+                        slot.style.opacity = '0.2';
+                    }, index * 70);
+                }
+            });
+            setTimeout(() => { if (callback) callback(); }, 600);
+        }
+
+        function undoLastPlayedCard() {
+            if (playedHistoryStack.length === 0) { alert("वापस लेने के लिए कोई चाल नहीं है!"); return; }
+            stopTurnTimer();
+            let lastMove = playedHistoryStack.pop();
+            let pIdx = lastMove.playerIndex;
+            let card = lastMove.card;
+
+            allHands[pIdx].push(card);
+            renderAllHands();
+            playedOnTable[pIdx] = null;
+            if (tableCardPiles[pIdx].length > 0) tableCardPiles[pIdx].pop();
+            updateTotalTableCounter();
+
+            let slot = document.getElementById(`slot-p${pIdx + 1}`);
+            slot.style.display = 'none';
+            slot.innerHTML = '';
+            activeTurn = pIdx;
+            updateTurnIndicators();
+            startTurnTimer();
+            syncGameStateToCloud();
+            showNotification(`🔄 पत्ता वापस ले लिया गया!`);
+        }
+
+        function calculateWinnerAndSetNextTurn() {
+            let winningPlayer = 0;
+            let highestRank = -1;
+            if (permanentTrumpSuit) {
+                for (let i = 0; i < 4; i++) {
+                    let card = playedOnTable[i];
+                    if (!card || isFolded[i]) continue;
+                    let cardRank = CARD_RANKS[card.value];
+                    if (card.suit === permanentTrumpSuit && cardRank > highestRank) {
+                        highestRank = cardRank; winningPlayer = i;
+                    }
+                }
+                if (highestRank === -1) {
+                    for (let i = 0; i < 4; i++) {
+                        let card = playedOnTable[i];
+                        if (!card || isFolded[i]) continue;
+                        let cardRank = CARD_RANKS[card.value];
+                        if (card.suit === leadingSuit && cardRank > highestRank) {
+                            highestRank = cardRank; winningPlayer = i;
+                        }
+                    }
+                }
+            } else {
+                for (let i = 0; i < 4; i++) {
+                    let card = playedOnTable[i];
+                    if (!card || isFolded[i]) continue;
+                    let cardRank = CARD_RANKS[card.value];
+                    if (card.suit === leadingSuit && cardRank > highestRank) {
+                        highestRank = cardRank; winningPlayer = i;
+                    }
+                }
+            }
+            return winningPlayer;
+        }
+
+        function collectTableCards() {
+            let totalTableCardsCount = tableCardPiles.reduce((acc, pile) => acc + pile.length, 0);
+            let activeCount = getActivePlayersCount();
+            let minCardsRequired = (activeCount < 4) ? 6 : 8;
+
+            if (totalTableCardsCount < minCardsRequired) {
+                alert(`टेबल पर कम से कम ${minCardsRequired} पत्ते होने चाहिए! अभी ${totalTableCardsCount} हैं।`);
+                return;
+            }
+
+            let collectorInput = prompt(`पत्ते उठाने वाले खिलाड़ी का नंबर दर्ज करें (1-4):`, lastRoundWinner !== null ? `${lastRoundWinner + 1}` : "1");
+            let collectorIdx = parseInt(collectorInput) - 1;
+
+            if (isNaN(collectorIdx) || collectorIdx < 0 || collectorIdx > 3) { alert("अमान्य खिलाड़ी संख्या!"); return; }
+            if (lastRoundWinner !== collectorIdx) { alert(`केवल पिछले राउंड के विजेता ही पत्ते उठा सकते हैं!`); return; }
+
+            stopTurnTimer();
+            let prevDehlas = collectedDehlas.map(arr => [...arr]);
+            let collectedCardsSnapshot = tableCardPiles.map(pile => [...pile]);
+
+            let dehlasInPile = [];
+            tableCardPiles.forEach(pile => {
+                pile.forEach(card => { if (card.value === '10') dehlasInPile.push(card); });
+            });
+
+            animateCollectionToPlayer(collectorIdx, totalTableCardsCount, () => {
+                dehlasInPile.forEach(d => collectedDehlas[collectorIdx].push(d));
+
+                lastCollectionHistory = {
+                    collectorIdx: collectorIdx,
+                    cardsSnapshot: collectedCardsSnapshot,
+                    addedCount: totalTableCardsCount,
+                    previousDehlas: prevDehlas
+                };
+
+                tableCardPiles = [[], [], [], []];
+                clearTableSlots();
+                playedOnTable = [null, null, null, null];
+                playedHistoryStack = [];
+                leadingSuit = null;
+                updateTotalTableCounter();
+                syncGameStateToCloud();
+
+                let dehlaMsg = dehlasInPile.length > 0 ? ` (${dehlasInPile.length} दहला शामिल)` : '';
+                showNotification(`✅ ${playerNamesList[collectorIdx]} ने ${totalTableCardsCount} पत्ते उठाए${dehlaMsg}!`);
+                evaluateMatchEndStatus();
+                startTurnTimer();
+            });
+        }
+
+        function evaluateMatchEndStatus() {
+            if (isMatchDecided) return;
+            let teamADehlas = collectedDehlas[0].length + collectedDehlas[2].length;
+            let teamBDehlas = collectedDehlas[1].length + collectedDehlas[3].length;
+            let totalDehlasInPlay = teamADehlas + teamBDehlas;
+            let isGameFullyEnded = (fullDeck.length === 0 && allHands.every(h => h.length === 0));
+
+            if (teamADehlas >= 4 || teamBDehlas >= 4 || totalDehlasInPlay === 4 || isGameFullyEnded) {
+                isMatchDecided = true;
+                isFirstMatchEver = false;
+                stopTurnTimer();
+                if (teamADehlas > teamBDehlas) {
+                    netKotScore += 1; lastLosingTeamKey = "Team B"; updateKotDisplay(); startFireworks();
+                    openMatchModal("🎉 Team A की शानदार जीत!", `Team A ने मैच जीत लिया!<br/>हारी हुई Team B के पास 1 गधा [कोट] जुड़ गया है।`);
+                } else if (teamBDehlas > teamADehlas) {
+                    netKotScore -= 1; lastLosingTeamKey = "Team A"; updateKotDisplay(); startFireworks();
+                    openMatchModal("🎉 Team B की शानदार जीत!", `Team B ने मैच जीत लिया!<br/>हारी हुई Team A के पास 1 गधा [कोट] जुड़ गया है।`);
+                } else {
+                    openMatchModal("🤝 मैच ड्रॉ रहा!", `दोनों टीमों के पास बराबर दहले और पत्ते हैं!`);
+                }
+            }
+        }
+
+        function undoLastCollection() {
+            if (!lastCollectionHistory) { alert("वापस करने के लिए कुछ नहीं है!"); return; }
+            stopTurnTimer();
+            let history = lastCollectionHistory;
+            collectedDehlas = history.previousDehlas.map(arr => [...arr]);
+            tableCardPiles = history.cardsSnapshot.map(pile => [...pile]);
+            updateTotalTableCounter();
+            lastCollectionHistory = null;
+            syncGameStateToCloud();
+            showNotification(`↩️ पिछले पत्ते टेबल पर बहाल कर दिए गए!`);
+            startTurnTimer();
+        }
+
+        function clearTableSlots() {
+            for (let i = 1; i <= 4; i++) {
+                let slot = document.getElementById(`slot-p${i}`);
+                if (slot) {
+                    slot.style.display = 'none'; slot.style.transform = ''; slot.style.opacity = '1';
+                    slot.style.transition = ''; slot.classList.remove('is-dehla'); slot.innerHTML = '';
+                }
+            }
+        }
+
+        function updateTrumpStatus() {
+            let el = document.getElementById('trump-status');
+            if (permanentTrumpSuit) el.innerText = `कट कलर: ${permanentTrumpSuit}`;
+            else el.innerText = `कट कलर: तय नहीं`;
+        }
+
+        function updateTurnIndicators() {
+            for (let i = 1; i <= 4; i++) {
+                let ind = document.getElementById(`turn-p${i}`);
+                if (activeTurn === (i - 1)) ind.style.display = 'block';
+                else ind.style.display = 'none';
+            }
+        }
+
+        function updateScoresDisplay() {
+            for (let i = 1; i <= 4; i++) {
+                let pDehlas = collectedDehlas[i - 1];
+                let dehlaEl = document.getElementById(`dehla-p${i}`);
+                if (dehlaEl) {
+                    (pDehlas.length > 0) 
+                        ? dehlaEl.innerHTML = `दहले: ${pDehlas.length} (${pDehlas.map(d => `<span style="color:${d.color==='red'?'#ff5252':'#fff'}">${d.suit}</span>`).join(' ')})`
+                        : dehlaEl.innerText = `दहले: 0`;
+                }
+            }
+        }
+
+        function updateTotalTableCounter() {
+            let totalTableCardsCount = tableCardPiles.reduce((acc, pile) => acc + pile.length, 0);
+            let counterEl = document.getElementById('center-total-counter');
+            if (totalTableCardsCount > 0) { counterEl.style.display = 'block'; counterEl.innerText = totalTableCardsCount; }
+            else { counterEl.style.display = 'none'; }
+        }
+
+        createFullDeck();
+        updateTurnIndicators();
+        updateKotDisplay();
+        updateTeamNamesDisplay();
+    </script>
+</body>
+</html>
